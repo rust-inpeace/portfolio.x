@@ -3,5 +3,6 @@ src = "src"
 out = "out"
 libs = ["lib"]
 remappings = [
-    "@source=src"
+    "@source=src",
+    "@openzeppelin=lib/openzeppelin-contracts/contracts"
 ]
