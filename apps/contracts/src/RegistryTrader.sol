@@ -3,8 +3,9 @@ pragma solidity ^0.8.24;
 
 import {IRegistryTrader} from "@source/interface/IRegistryTrader.sol";
 import {IFundManager} from "@source/interface/IFundManager.sol";
-
-contract RegistryTrader is IRegistryTrader {
+import {Ownable} from "@openzeppelin/access/Ownable.sol"
+;
+contract RegistryTrader is Ownable ,IRegistryTrader {
     uint256 public traderDepositAmount = 19 ether;
 
     struct TraderStats {
@@ -18,23 +19,22 @@ contract RegistryTrader is IRegistryTrader {
 
     mapping(address => TraderStats) public traderDeposit;
 
-    IFundManager immutable ifundManager;
+    IFundManager private ifundManager;
 
-    constructor(address _ifundManager) {
-        ifundManager = IFundManager(_ifundManager);
-    }
+    constructor() Ownable(msg.sender) {}
 
     /// @inheritdoc IRegistryTrader
-    function registerTrader(address _trader, string memory _traderInfoUri) external payable {
+    function registerTrader(string memory _traderInfoUri) external payable {
         require(msg.value >= traderDepositAmount);
-        traderDeposit[_trader] = TraderStats(
-            _trader,
+        traderDeposit[msg.sender] = TraderStats(
+            msg.sender,
             _traderInfoUri,
             msg.value,
             false,
             false,
             new address[](0)
         );
+        ifundManager.bindTrader(msg.sender);
     }
 
     /// @inheritdoc IRegistryTrader
@@ -44,5 +44,9 @@ contract RegistryTrader is IRegistryTrader {
             value: traderDeposit[_trader].depositBalance
         }("");
         require(success);
+    }
+
+    function connectRegistryTrader(address _fundmanager) external onlyOwner {
+        ifundManager = IFundManager(_fundmanager);
     }
 }

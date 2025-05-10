@@ -6,16 +6,18 @@ import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/access/Ownable.sol";
 import {MerkleProof} from "@openzeppelin/utils/cryptography/MerkleProof.sol";
 import {IFundManager} from "@source/interface/IFundManager.sol";
+import {IRegistryTrader} from "@source/interface/IRegistryTrader.sol";
 
 contract FundManager is ReentrancyGuard, Ownable, IFundManager {
     using SafeERC20 for IERC20;
 
     error FundManager__TokenIsNotAllowed();
 
+    address private registryTraderContract;    
+
     mapping(address => mapping(address => uint256)) public userDeposit;
     mapping(address => uint256) public userFundsLockTimer;
-    mapping(address => bool) public availableTraders;
-    // mapping(address => address) 
+    mapping(address => bool) public registerTrader;
 
     /// @notice supported token user can deposit these token only
     address constant ETHH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -29,7 +31,14 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
         uint256 amount
     );
 
-    constructor() Ownable(msg.sender) {}
+    constructor(address _registryTraderContract) Ownable(msg.sender) {
+        registryTraderContract = _registryTraderContract;
+    }
+
+    modifier onlyRegistryCall {
+        require(msg.sender == registryTraderContract);
+        _;
+    }
 
     /// @notice Allows a user to deposit either ETH, USDC, or USDT into the contract.
     /// @dev For ETH deposits, use the predefined ETHH_ADDRESS as the _token parameter.
@@ -51,8 +60,12 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
 
     function assignExpertTrader() external {}
 
-    function joinTrader(address _trader) external {
-
+    function bindTrader(address _trader) external onlyRegistryCall {
+        registerTrader[_trader] = true;
     }
 
+
+    function updateRegistryTraderContract(address _registryTraderContract) external onlyOwner {
+        registryTraderContract = _registryTraderContract;
+    }
 }
