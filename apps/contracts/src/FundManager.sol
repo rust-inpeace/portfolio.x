@@ -20,9 +20,11 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
     error FUND_MANAGER___TRADER_ALREADY_VERIFIED();
     error FUND_MANAGER___ZERO_ADDRESS();
 
+    event FUND_MANAGER___TRADER_ASSIGN(address indexed trader, address indexed user);
+    event FUND_MANAGER___USER_TOKEN_DEPOSIT(address indexed account, address indexed token, uint256 amount);
+
     address private registryTraderContract;
     mapping(address => mapping(address => uint256)) public userDeposit;
-    mapping(address => address) public traderAssignedToUser;
     mapping(address => uint256) public userFundsLockTimer;
     mapping(address => StructTypes.TraderStats) public registerTrader;
 
@@ -30,9 +32,6 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
     address constant ETHH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant USDT_ADDRESS = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-
-    /// @notice Emitted When user deposit token
-    event FundManager__UserTokenDeposit(address indexed account, address indexed token, uint256 amount);
 
     constructor(address _registryTraderContract) Ownable(msg.sender) {
         registryTraderContract = _registryTraderContract;
@@ -58,19 +57,27 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
             userDeposit[msg.sender][_token] += _amount;
             IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         }
-        emit FundManager__UserTokenDeposit(msg.sender, _token, _amount);
+        emit FUND_MANAGER___USER_TOKEN_DEPOSIT(msg.sender, _token, _amount);
     }
 
-    // function assignExpertTrader(address _trader) external {
-    //     if (
-    //         userDeposit[msg.sender][ETHH_ADDRESS] == 0 && userDeposit[msg.sender][USDC_ADDRESS] == 0
-    //             && userDeposit[msg.sender][USDT_ADDRESS] == 0
-    //     ) revert FUND_MANAGER___USER_DEPOSIT_AMOUNT_ZERO();
-    //     if (registerTrader[_trader] == false) revert FUND_MANAGER___INVALID_TRADER();
-    //     traderAssignedToUser[msg.sender] = _trader;
+    /// @notice Allow user to assign a trader to manage their funds.
+    /// @dev The user must have deposited funds before assigning a trader.
+    /// @param _trader The address of the trader to assign.
+    /// @dev The trader must be registered in the system.
+    function assignExpertTrader(address _trader) external {
+        if (userDeposit[msg.sender][ETHH_ADDRESS] == 0 && userDeposit[msg.sender][USDC_ADDRESS] == 0
+            && userDeposit[msg.sender][USDT_ADDRESS] == 0) revert FUND_MANAGER___USER_DEPOSIT_AMOUNT_ZERO();
+        if (registerTrader[_trader].registered == false) revert FUND_MANAGER___INVALID_TRADER();
+        registerTrader[_trader].handlingUsers.push(msg.sender);
+        emit FUND_MANAGER___TRADER_ASSIGN(_trader, msg.sender);
+    }
 
-    // }
-
+    /// @notice this function register trader in the system
+    /// @dev this function only callable by registry trader contract
+    /// @param _trader The address of the trader to register.
+    /// @param _traderDeposit The deposit amount for the trader.
+    /// @param _traderUri The URI for the trader's information.
+    /// @return bool indicating success or failure of the operation.
     function bindTrader(address _trader, uint256 _traderDeposit, string memory _traderUri)
         external
         onlyRegistryCall
