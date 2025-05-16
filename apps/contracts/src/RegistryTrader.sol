@@ -32,7 +32,7 @@ contract RegistryTrader is Ownable, IRegistryTrader, EIP712 {
 
     /// @inheritdoc IRegistryTrader
     function registerTrader(string memory _traderInfoUri) external payable {
-        if (msg.value >= traderDepositAmount) revert REGISTRY_TRADER_ERROR___TRADER_DEPOSIT_AMOUNT_ZERO();
+        if (msg.value < traderDepositAmount) revert REGISTRY_TRADER_ERROR___TRADER_DEPOSIT_AMOUNT_ZERO();
         bool success = ifundManager.bindTrader(msg.sender, msg.value, _traderInfoUri);
         if (!success) revert REGISTRY_TRADER_ERROR___TRADER_UNABLE_TO_REGISTER();
         emit REGISTRY_TRADER_EVENT___TRADER_REGISTER(msg.sender, _traderInfoUri, msg.value);

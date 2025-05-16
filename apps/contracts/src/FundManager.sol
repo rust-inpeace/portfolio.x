@@ -20,16 +20,6 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
     error FUND_MANAGER___TRADER_ALREADY_VERIFIED();
     error FUND_MANAGER___ZERO_ADDRESS();
 
-    // struct TraderStats {
-    //     address trader;
-    //     bool registered;
-    //     string traderInfoUri;
-    //     uint256 depositBalance;
-    //     bool verified;
-    //     bool canWithdraw;
-    //     address[] handlingUsers;
-    // }
-
     address private registryTraderContract;
     mapping(address => mapping(address => uint256)) public userDeposit;
     mapping(address => address) public traderAssignedToUser;
