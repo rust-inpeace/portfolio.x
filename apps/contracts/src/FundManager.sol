@@ -1,18 +1,18 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IERC20, SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
-import {Ownable} from "@openzeppelin/access/Ownable.sol";
-import {MerkleProof} from "@openzeppelin/utils/cryptography/MerkleProof.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IFundManager} from "@source/interface/IFundManager.sol";
 import {IRegistryTrader} from "@source/interface/IRegistryTrader.sol";
 import {StructTypes} from "@source/library/StructTypes.sol";
-
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {IERC20MetaData} from "@source/interface/IERC20MetaData.sol";
 
 contract FundManager is ReentrancyGuard, Ownable, IFundManager {
     using SafeERC20 for IERC20;
-    using StructTypes for StructTypes.TraderStats;
 
     error FUND_MANAGER___USER_DEPOSIT_AMOUNT_ZERO();
     error FUND_MANAGER___INVALID_TRADER();
@@ -32,6 +32,8 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
     address constant ETHH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant USDT_ADDRESS = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+
+    uint256 constant ETH_DECIMALS = 18;
 
     constructor(address _registryTraderContract) Ownable(msg.sender) {
         registryTraderContract = _registryTraderContract;
@@ -102,6 +104,14 @@ contract FundManager is ReentrancyGuard, Ownable, IFundManager {
 
     function getRegisteredTraderData(address _trader) public view returns (StructTypes.TraderStats memory) {
         return registerTrader[_trader];
+    }
+
+    function getUSDValue(uint256 _amount, address _token) public view returns (uint256) {
+        AggregatorV3Interface chainLinkPriceFeed = AggregatorV3Interface(_token);
+        (, int256 price, , , ) = chainLinkPriceFeed.latestRoundData();
+        uint256 chainLinkDecimals = chainLinkPriceFeed.decimals();
+        uint256 usdAmount = (_amount * uint256(price)) / (10**chainLinkDecimals);
+        return usdAmount;
     }
 
     // note: trading used user deposit token like eth, usdc, usdc or portfolio token profit and fee calculate on only used token

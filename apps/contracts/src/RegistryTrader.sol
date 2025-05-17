@@ -3,9 +3,9 @@ pragma solidity ^0.8.24;
 
 import {IRegistryTrader} from "@source/interface/IRegistryTrader.sol";
 import {IFundManager} from "@source/interface/IFundManager.sol";
-import {Ownable} from "@openzeppelin/access/Ownable.sol";
-import {EIP712} from "@openzeppelin/utils/cryptography/EIP712.sol";
-import {ECDSA} from "@openzeppelin/utils/cryptography/ECDSA.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract RegistryTrader is Ownable, IRegistryTrader, EIP712 {
     error REGISTRY_TRADER_ERROR___VERIFY_OWNER_SIGNATURE_FAILED();
